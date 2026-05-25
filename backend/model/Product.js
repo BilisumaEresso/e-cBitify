@@ -1,0 +1,28 @@
+const mongoose = require("mongoose");
+
+const productSchema = new mongoose.Schema(
+  {
+    name: { type: String, required: true },
+    desc: { type: String },
+    quantity: { type: Number, default: 1,min :0 },
+    price: { type: Number, required: true, min: 0 },
+    averageRating: {type: Number, default:0 },
+    rateNumber:{type:Number,default:0},
+    sold:{type:Number,default:0},
+    category: {
+      type: mongoose.Types.ObjectId,
+      ref: "category",
+    },
+    createdBy:{
+      type:mongoose.Types.ObjectId,
+      ref:"user"
+    },
+    photo: [{ type: mongoose.Types.ObjectId, ref: "file" }],
+  },
+  { timestamps: true }
+);
+productSchema.index({ name: "text", desc: "text" });
+
+const Product = mongoose.model("product", productSchema);
+
+module.exports = Product;
