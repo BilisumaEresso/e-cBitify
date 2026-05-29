@@ -11,12 +11,17 @@ router.use(isAuth, isSuperAdmin);
 router.get("/dashboard", adminController.getAdminDashboard);
 
 // Users & admins
-router.get("/users",      adminController.getAllUsers);
-router.get("/admins",     adminController.getAllAdmins);
-router.post("/admins",    adminController.createAdmin);
+router.get("/users", adminController.getAllUsers);
+router.get("/admins", adminController.getAllAdmins);
+router.post("/admins", adminController.createAdmin);
 router.post("/add-admin", adminController.createAdmin); // alias used by AddAdminPage
 
+// User management actions
+router.post("/users/:id/ban", adminController.banUser);
+router.post("/users/:id/role", adminController.changeUserRole);
+router.delete("/users/:id", adminController.deleteUser);
+
 // Analytics
-router.get("/analytics",  adminController.getAdminAnalytics);
+router.get("/analytics", adminController.getAdminAnalytics);
 
 module.exports = router;

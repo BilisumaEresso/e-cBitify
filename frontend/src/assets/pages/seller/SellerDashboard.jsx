@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import {
   Package,
   DollarSign,
@@ -38,63 +39,71 @@ export default function SellerDashboard() {
   }, []);
 
   const fetchSellerData = async () => {
-    // Mock data - replace with API calls
-    const allProducts = await (await productAPI.getAll()).data.products;
-    console.log(allProducts);
-   const products = allProducts.filter(
-     (product) => product.createdBy._id?.toString() === sellerId.toString()
-   );
-   console.log(products)
+    try {
+      const [productsRes, ordersRes] = await Promise.all([
+        productAPI.getAll(),
+        orderAPI.getAll(),
+      ]);
 
-    const totalSales = products.reduce(
-      (acc, p) => acc + Number(p.sold || 0),
-      0
-    );
+      const allProducts = productsRes.data.products;
+      const products = allProducts.filter(
+        (product) => product.createdBy?._id?.toString() === sellerId.toString()
+      );
 
-    const totalRevenue = products.reduce(
-      (acc, p) => acc + Number(p.sold || 0) * Number(p.price || 0),
-      0
-    );
+      const totalSales = products.reduce(
+        (acc, p) => acc + Number(p.sold || 0),
+        0
+      );
 
-    const averageRating = products.reduce(
-      (acc, p) => acc + Number(p.averageRating || 0)/5*products.length,
-      0
-    );
+      const totalRevenue = products.reduce(
+        (acc, p) => acc + Number(p.sold || 0) * Number(p.price || 0),
+        0
+      );
 
+      const averageRating =
+        products.length > 0
+          ? products.reduce((acc, p) => acc + Number(p.averageRating || 0), 0) /
+            products.length
+          : 0;
 
-    const allOrders = (await orderAPI.getAll()).data.orders;
-    console.log(allOrders)
-    const orders = allOrders.filter((order) =>
-      order.items.some((item) => item.product.createdBy === sellerId)
-    );
-    const recentOrders = orders
-      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-      .slice(0, 5);
-    console.log(orders);
-    let pendingOrders = 0;
-    let completedOrders = 0;
-    orders.map((order) => {
-      order.status == "pending"
-        ? pendingOrders++
-        : order.status == "completed"
-        ? completedOrders++
-        : null;
-    });
+      const allOrders = ordersRes.data.orders;
+      const orders = allOrders.filter((order) =>
+        order.items.some(
+          (item) => item.product.createdBy?._id?.toString() === sellerId.toString()
+        )
+      );
 
-    setStats({
-      totalProducts: products.length || 0,
-      totalSales: totalSales,
-      pendingOrders: pendingOrders,
-      completedOrders: completedOrders,
-      totalRevenue: totalRevenue,
-      averageRating: averageRating,
-    });
+      const recentOrders = orders
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+        .slice(0, 5);
 
-    setRecentOrders(recentOrders);
-    const topFiveSold = [...allProducts]
-      .sort((a, b) => b.sold - a.sold)
-      .slice(0, 5);
-    setTopProducts(topFiveSold);
+      let pendingOrders = 0;
+      let completedOrders = 0;
+      orders.forEach((order) => {
+        if (order.status === "pending") {
+          pendingOrders++;
+        } else if (order.status === "completed") {
+          completedOrders++;
+        }
+      });
+
+      setStats({
+        totalProducts: products.length || 0,
+        totalSales: totalSales,
+        pendingOrders: pendingOrders,
+        completedOrders: completedOrders,
+        totalRevenue: totalRevenue,
+        averageRating: averageRating,
+      });
+
+      setRecentOrders(recentOrders);
+      const topFiveSold = [...allProducts]
+        .sort((a, b) => b.sold - a.sold)
+        .slice(0, 5);
+      setTopProducts(topFiveSold);
+    } catch (error) {
+      toast.error("Failed to load seller dashboard data");
+    }
   };
 
   const getStatusColor = (status) => {
