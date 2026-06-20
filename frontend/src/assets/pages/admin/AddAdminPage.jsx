@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { UserPlus, Eye, EyeOff, ArrowLeft } from "lucide-react";
-import api from "../../../services/api";
+import { adminAPI } from "../../../services/apiHelpers";
 import toast from "react-hot-toast";
 
 export default function AddAdminPage() {
@@ -15,7 +15,7 @@ export default function AddAdminPage() {
     if (form.password.length < 6) { toast.error("Password must be at least 6 characters"); return; }
     try {
       setLoading(true);
-      await api.post("/admin/add-admin", form);
+      await adminAPI.createAdmin(form);
       toast.success("Admin added successfully!");
       navigate("/admin/admins");
     } catch (err) {

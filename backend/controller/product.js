@@ -296,6 +296,10 @@ const updateProduct = async (req, res, next) => {
       res.status(404);
       throw new Error("Product not found");
     }
+    if (req.user.role !== 3 && product.createdBy.toString() !== (req.user._id || req.user.id).toString()) {
+      res.status(403);
+      throw new Error("You can only edit your own products");
+    }
     // update fields
     if (name) product.name = name;
     if (desc) product.desc = desc;
@@ -363,6 +367,10 @@ const deleteProduct = async (req, res, next) => {
       res.status(404);
       throw new Error("Product not found");
     }
+    if (req.user.role !== 3 && product.createdBy.toString() !== (req.user._id || req.user.id).toString()) {
+      res.status(403);
+      throw new Error("You can only delete your own products");
+    }
     const category =await Category.findById(product.category)
     category.productCount= category.productCount-1
     await category.save()
@@ -379,6 +387,38 @@ const deleteProduct = async (req, res, next) => {
     res
       .status(200)
       .json({ code: 200, status: true, message: "product deleted" });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const deleteProductImage = async (req, res, next) => {
+  try {
+    const { id, photoId } = req.params;
+    const product = await Product.findById(id);
+    if (!product) {
+      res.status(404);
+      throw new Error("Product not found");
+    }
+
+    const file = await File.findById(photoId);
+    if (!file) {
+      res.status(404);
+      throw new Error("Image not found");
+    }
+
+    if (file.public_id) {
+      await cloudinary.uploader.destroy(file.public_id).catch(() => {});
+    }
+    await File.findByIdAndDelete(photoId);
+
+    product.photo = product.photo.filter((p) => p.toString() !== photoId);
+    await product.save();
+
+    res.status(200).json({
+      status: true,
+      message: "image removed successfully",
+    });
   } catch (error) {
     next(error);
   }
@@ -579,4 +619,5 @@ module.exports = {
   getAllReview,
   getUserReview,
   searchProducts,
+  deleteProductImage,
 };

@@ -105,7 +105,7 @@ function Navbar() {
           <div className="flex justify-between h-16 items-center">
             {/* Logo */}
             <NavLink to="/" className="flex-shrink-0">
-              <img className="h-35 w-auto" src={logo} alt="Logo" />
+              <img className="h-12 w-auto" src={logo} alt="Logo" />
             </NavLink>
 
             {/* Desktop Links */}
@@ -162,8 +162,8 @@ function Navbar() {
                   </button>
 
                   {isDropdownOpen && (
-                    <div className="absolute right-0 mt-2 w-64 bg-gray-100 rounded-lg shadow-lg  border-blue-300 z-30">
-                      <div className="p-3 border-b-blue-400">
+                    <div className="absolute right-0 mt-2 w-64 bg-gray-100 rounded-lg shadow-lg border border-blue-300 z-30">
+                      <div className="p-3 border-b border-blue-400">
                         <p className="font-medium">{user.name}</p>
                         <p className="text-sm text-gray-500">{user.email}</p>
                       </div>

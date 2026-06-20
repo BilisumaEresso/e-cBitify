@@ -19,9 +19,7 @@ export default function ProductDetail() {
   const [reviewRating, setReviewRating] = useState(0);
   const [reviewComment, setReviewComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
-
-  // Check if current user has reviewed
-  const userReview = reviews.find((r) => r.user?._id === user?._id||id);
+  const [userReview, setUserReview] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -40,6 +38,15 @@ export default function ProductDetail() {
         const photos = productData?.photo?.slice(0, 5) || [];
         if (photos.length > 0) {
           setActiveImage(photos[0].signedUrl);
+        }
+
+        if (isAuthenticated) {
+          try {
+            const myReviewRes = await productAPI.getUserReview(id);
+            setUserReview(myReviewRes.data?.review || null);
+          } catch {
+            setUserReview(null);
+          }
         }
       } catch (err) {
         toast.error(err?.message || "Failed to load product");
@@ -80,6 +87,12 @@ export default function ProductDetail() {
       // Refresh reviews
       const reviewRes = await productAPI.getReview(id);
       setReviews(reviewRes.data?.reviews || []);
+      try {
+        const myReviewRes = await productAPI.getUserReview(id);
+        setUserReview(myReviewRes.data?.review || null);
+      } catch {
+        setUserReview(null);
+      }
       setReviewRating(0);
       setReviewComment("");
     } catch (err) {
@@ -98,6 +111,12 @@ export default function ProductDetail() {
       toast.success("Review deleted");
       const reviewRes = await productAPI.getReview(id);
       setReviews(reviewRes.data?.reviews || []);
+      try {
+        const myReviewRes = await productAPI.getUserReview(id);
+        setUserReview(myReviewRes.data?.review || null);
+      } catch {
+        setUserReview(null);
+      }
       setReviewRating(0);
       setReviewComment("");
     } catch (err) {

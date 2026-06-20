@@ -7,6 +7,7 @@ const router = express.Router();
 
 router.post("/", isAuth, orderController.addOrder);
 router.get("/", isAuth, orderController.getAllOrders);
+router.get("/seller/all", isAuth, orderController.getSellerOrders);
 router.get("/:id", isAuth, orderController.getOrder);
 router.patch("/status/:id", isAuth, isAdmin, orderController.updateStatus);
 router.patch("/cancel/:id", isAuth, orderController.cancelOrder);

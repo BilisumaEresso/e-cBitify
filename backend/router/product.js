@@ -36,6 +36,12 @@ router.post(
   upload.array("images", 6),
   productController.addProductImages
 );
+router.delete(
+  "/:id/images/:photoId",
+  isAuth,
+  isAdmin,
+  productController.deleteProductImage
+);
 router.put(
   "/:id",
   isAuth,

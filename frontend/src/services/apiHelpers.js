@@ -46,6 +46,8 @@ export const productAPI = {
 
   getReview: (productId) => api.get(`/product/${productId}/reviews`),
 
+  getUserReview: (productId) => api.get(`/product/${productId}/review`),
+
   deleteReview: (productId) => api.delete(`/product/${productId}/review`),
 
   // Upload images to existing product
@@ -62,12 +64,7 @@ export const productAPI = {
   },
 
   // Delete photo from product
-  deletePhoto: async (productId, photoId) => {
-    // Adjust this based on your backend route
-    // Could be: DELETE /api/products/:productId/photos/:photoId
-    // Or: DELETE /api/photos/:photoId
-    return axios.delete(`/api/products/${productId}/photos/${photoId}`);
-  },
+  deletePhoto: (productId, photoId) => api.delete(`/product/${productId}/images/${photoId}`),
 };
 
 /* =========================
@@ -123,6 +120,8 @@ export const orderAPI = {
 
   getById: (id) => api.get(`/order/${id}`),
 
+  getSellerOrders: () => api.get("/order/seller/all"),
+
   create: (orderData) => api.post("/order", orderData),
 
   cancel: (orderId) => api.patch(`/order/cancel/${orderId}`),
@@ -133,4 +132,31 @@ export const orderAPI = {
   initiateChapa: (orderId) => api.post("/order/payment/chapa/initialize", { id: orderId }),
 
   verifyChapa: (txRef) => api.get(`/order/payment/chapa/verify/${txRef}`),
+};
+
+/* =========================
+   ADMIN ENDPOINTS (role 3)
+========================= */
+export const adminAPI = {
+  getDashboard: () => api.get("/admin/dashboard"),
+
+  getAnalytics: () => api.get("/admin/analytics"),
+
+  getUsers: () => api.get("/admin/users"),
+
+  getAdmins: () => api.get("/admin/admins"),
+
+  getOrders: () => api.get("/admin/orders"),
+
+  createAdmin: (data) => api.post("/admin/add-admin", data),
+
+  banUser: (userId, banned) => api.post(`/admin/users/${userId}/ban`, { banned }),
+
+  changeRole: (userId, role) => api.post(`/admin/users/${userId}/role`, { role }),
+
+  deleteUser: (userId) => api.delete(`/admin/users/${userId}`),
+
+  getSettings: () => api.get("/admin/settings"),
+
+  updateSettings: (data) => api.put("/admin/settings", data),
 };

@@ -9,5 +9,6 @@ const User=require("./Users")
 const File=require("./File")
 const Trending=require("./Trending")
 const Recommendation=require("./Recommendation")
+const PlatformSettings = require("./PlatformSettings")
 
-module.exports={User,Product,Category,Cart,Review,Address,Payment,Order,File,Trending,Recommendation}
+module.exports={User,Product,Category,Cart,Review,Address,Payment,Order,File,Trending,Recommendation,PlatformSettings}

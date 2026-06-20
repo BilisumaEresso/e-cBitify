@@ -4,24 +4,21 @@ const isAuth = require("../middleware/isAuth");
 const isSuperAdmin = require("../middleware/isSuperAdmin");
 const { adminController } = require("../controller");
 
-// All admin routes require authentication + super admin role
 router.use(isAuth, isSuperAdmin);
 
-// Dashboard
 router.get("/dashboard", adminController.getAdminDashboard);
-
-// Users & admins
 router.get("/users", adminController.getAllUsers);
 router.get("/admins", adminController.getAllAdmins);
+router.get("/orders", adminController.getAllOrders);
 router.post("/admins", adminController.createAdmin);
-router.post("/add-admin", adminController.createAdmin); // alias used by AddAdminPage
+router.post("/add-admin", adminController.createAdmin);
 
-// User management actions
 router.post("/users/:id/ban", adminController.banUser);
 router.post("/users/:id/role", adminController.changeUserRole);
 router.delete("/users/:id", adminController.deleteUser);
 
-// Analytics
 router.get("/analytics", adminController.getAdminAnalytics);
+router.get("/settings", adminController.getSettings);
+router.put("/settings", adminController.updateSettings);
 
 module.exports = router;

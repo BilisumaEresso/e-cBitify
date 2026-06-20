@@ -153,6 +153,14 @@ function App() {
                   </RoleProtectedRoute>
                 }
               />
+              <Route
+                path="/edit-product/:id"
+                element={
+                  <RoleProtectedRoute allowedRoles={[2]}>
+                    <AddProduct />
+                  </RoleProtectedRoute>
+                }
+              />
 
               {/* ── Admin (role 3) ──────────────────────── */}
               <Route

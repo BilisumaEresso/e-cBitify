@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Shield, Search, Loader2, UserPlus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import api from "../../../services/api";
+import { adminAPI } from "../../../services/apiHelpers";
 import toast from "react-hot-toast";
 
 export default function AdminAdmins() {
@@ -14,7 +14,7 @@ export default function AdminAdmins() {
 
   const fetchAdmins = async () => {
     try {
-      const res = await api.get("/admin/admins");
+      const res = await adminAPI.getAdmins();
       setAdmins(res.data.admins || []);
     } catch {
       toast.error("Failed to load admins");

@@ -77,60 +77,30 @@ export default function ProfileSidebar({ isOpen, onClose }) {
       id: "orders",
       label: "My Orders",
       icon: Package,
-      path: "/orders",
+      path: "/my-orders",
       color: "bg-blue-100 text-blue-600",
-    },
-    {
-      id:"reviews",
-      label:"My Reviews",
-      icon: Star,
-      path:"/reviews",
-      color:"bg-yellow-100 text-green-600"
-    },
-    {
-      id: "wishlist",
-      label: "Wishlist",
-      icon: Heart,
-      path: "/wishlist",
-      color: "bg-pink-100 text-pink-600",
-    },
-    {
-      id: "payment",
-      label: "Payment Methods",
-      icon: CreditCard,
-      path: "/payment",
-      color: "bg-green-100 text-green-600",
-    },
-    {
-      id: "history",
-      label: "Order History",
-      icon: History,
-      path: "/history",
-      color: "bg-yellow-100 text-yellow-600",
     },
   ];
 
-  if (user?.role === 2 || user?.role === 3) {
-    navigationItems.push(
-      {
-        id: "products",
-        label: "My Products",
-        icon: Store,
-        path: "/seller/products",
-        color: "bg-blue-100 text-blue-600",
-      },
-      {
-        id: "analytics",
-        label: "Analytics",
-        icon: Shield,
-        path: "/seller/analytics",
-        color: "bg-indigo-100 text-indigo-600",
-      }
-    );
+  if (user?.role === 2) {
+    navigationItems.push({
+      id: "products",
+      label: "My Products",
+      icon: Store,
+      path: "/seller/products",
+      color: "bg-blue-100 text-blue-600",
+    });
   }
 
   if (user?.role === 3) {
     navigationItems.push(
+      {
+        id: "admin-analytics",
+        label: "Analytics",
+        icon: Shield,
+        path: "/admin/analytics",
+        color: "bg-indigo-100 text-indigo-600",
+      },
       {
         id: "admin",
         label: "Admin Dashboard",
@@ -239,18 +209,6 @@ export default function ProfileSidebar({ isOpen, onClose }) {
 
         {/* Settings & Logout */}
         <div className="p-6 border-t bg-white">
-          <button
-            onClick={() => handleNavigation("/settings")}
-            className="w-full flex items-center justify-between p-3 mb-3 rounded-lg hover:bg-gray-50 transition"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-                <Settings size={20} className="text-gray-600" />
-              </div>
-              <span className="font-medium">Settings</span>
-            </div>
-            <ChevronRight size={20} className="text-gray-400" />
-          </button>
           <button
             onClick={handleLogout}
             className="w-full flex items-center justify-center gap-2 p-3 bg-red-50 hover:bg-red-100 rounded-lg text-red-600 font-medium transition-colors"

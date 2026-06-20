@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
-import { useAuth } from "../../context/AuthContext";
-import { orderAPI, productAPI } from "../../../services/apiHelpers";
+import { orderAPI } from "../../../services/apiHelpers";
 import {
   Package, Loader2, ChevronDown, ChevronUp,
   Clock, CheckCircle, Truck, XCircle,
@@ -18,7 +17,6 @@ const STATUS_COLOR = {
 };
 
 export default function SellerOrders() {
-  const { user } = useAuth();
   const [orders, setOrders]     = useState([]);
   const [loading, setLoading]   = useState(true);
   const [expanded, setExpanded] = useState({});
@@ -29,25 +27,8 @@ export default function SellerOrders() {
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      const [ordRes, prodRes] = await Promise.all([
-        orderAPI.getAll(),
-        productAPI.getAll(),
-      ]);
-      const allOrders   = ordRes.data.orders || [];
-      const allProducts = prodRes.data.products || [];
-
-      // Build a set of product IDs owned by this seller
-      const myProductIds = new Set(
-        allProducts
-          .filter((p) => p.createdBy?._id === user?.id || p.createdBy?._id === user?._id)
-          .map((p) => p._id)
-      );
-
-      // Keep orders that contain at least one of this seller's products
-      const mine = allOrders.filter((order) =>
-        order.items.some((item) => myProductIds.has(item.product?._id))
-      );
-      setOrders(mine);
+      const res = await orderAPI.getSellerOrders();
+      setOrders(res.data.orders || []);
     } catch {
       toast.error("Failed to load orders");
     } finally {

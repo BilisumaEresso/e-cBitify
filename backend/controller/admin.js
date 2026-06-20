@@ -1,24 +1,82 @@
-const { User, Order, Product } = require("../model");
+const { User, Order, Product, PlatformSettings } = require("../model");
 const hashPassword = require("../utils/hashPassword");
 const { Address } = require("../model");
 
+const getOrCreateSettings = async () => {
+  let settings = await PlatformSettings.findOne();
+  if (!settings) {
+    settings = await PlatformSettings.create({});
+  }
+  return settings;
+};
+
 const getAdminDashboard = async (req, res, next) => {
   try {
-    const [users, orders, products] = await Promise.all([
+    const [
+      totalUsers,
+      totalOrders,
+      totalProducts,
+      totalSellers,
+      totalAdmins,
+      ordersToday,
+      recentOrders,
+      recentUsers,
+    ] = await Promise.all([
       User.countDocuments(),
       Order.countDocuments(),
       Product.countDocuments(),
+      User.countDocuments({ role: 2 }),
+      User.countDocuments({ role: 3 }),
+      Order.countDocuments({
+        createdAt: { $gte: new Date(new Date().setHours(0, 0, 0, 0)) },
+      }),
+      Order.find()
+        .sort({ createdAt: -1 })
+        .limit(5)
+        .populate("user", "name email"),
+      User.find()
+        .sort({ createdAt: -1 })
+        .limit(3)
+        .select("name email createdAt"),
     ]);
+
+    const activity = [
+      ...recentOrders.map((order) => ({
+        id: order._id,
+        action: `Order #${String(order._id).slice(-8).toUpperCase()} — ${order.status}`,
+        user: order.user?.name || "Customer",
+        time: order.createdAt,
+        type: "order",
+        amount: order.totalAmount,
+      })),
+      ...recentUsers.map((u) => ({
+        id: u._id,
+        action: "New user registered",
+        user: u.name,
+        time: u.createdAt,
+        type: "user",
+      })),
+    ]
+      .sort((a, b) => new Date(b.time) - new Date(a.time))
+      .slice(0, 8);
+
     res.json({
       status: true,
-      data: { totalUsers: users, totalOrders: orders, totalProducts: products },
+      data: {
+        totalUsers,
+        totalOrders,
+        totalProducts,
+        totalSellers,
+        totalAdmins,
+        ordersToday,
+        recentActivity: activity,
+      },
     });
   } catch (err) {
     next(err);
   }
 };
 
-// All users (buyers + sellers + admins) — for AdminUsers page
 const getAllUsers = async (req, res, next) => {
   try {
     const users = await User.find().select("-password").populate("address");
@@ -28,7 +86,6 @@ const getAllUsers = async (req, res, next) => {
   }
 };
 
-// Only super admins (role 3) — for AdminAdmins page
 const getAllAdmins = async (req, res, next) => {
   try {
     const admins = await User.find({ role: 3 }).select("-password");
@@ -38,7 +95,19 @@ const getAllAdmins = async (req, res, next) => {
   }
 };
 
-// Create a new super admin — matches POST /admin/add-admin from AddAdminPage
+const getAllOrders = async (req, res, next) => {
+  try {
+    const orders = await Order.find()
+      .populate("items.product")
+      .populate("user", "name email")
+      .populate("address")
+      .sort({ createdAt: -1 });
+    res.json({ status: true, orders });
+  } catch (err) {
+    next(err);
+  }
+};
+
 const createAdmin = async (req, res, next) => {
   try {
     const {
@@ -61,7 +130,7 @@ const createAdmin = async (req, res, next) => {
     const adminExists = await User.findOne({ email });
     if (adminExists) {
       res.status(400);
-      return res.json({ status: false, message: "Email already exists" });
+      throw new Error("Email already exists");
     }
 
     const hashed = await hashPassword(password);
@@ -100,6 +169,11 @@ const banUser = async (req, res, next) => {
     const { id } = req.params;
     const { banned } = req.body;
 
+    if (typeof banned !== "boolean") {
+      res.status(400);
+      throw new Error("banned must be a boolean");
+    }
+
     const user = await User.findById(id);
     if (!user) {
       res.status(404);
@@ -128,9 +202,9 @@ const changeUserRole = async (req, res, next) => {
     const { id } = req.params;
     const { role } = req.body;
 
-    if (![1, 2, 3].includes(role)) {
+    if (![1, 2].includes(role)) {
       res.status(400);
-      throw new Error("Invalid role");
+      throw new Error("Invalid role — only buyer (1) or seller (2) allowed");
     }
 
     const user = await User.findById(id);
@@ -179,20 +253,43 @@ const deleteUser = async (req, res, next) => {
   }
 };
 
-// Analytics — detailed stats for AdminAnalytics page
 const getAdminAnalytics = async (req, res, next) => {
   try {
-    const [totalUsers, totalOrders, totalProducts, totalRevenue] =
-      await Promise.all([
-        User.countDocuments(),
-        Order.countDocuments(),
-        Product.countDocuments(),
-        Order.aggregate([
-          { $group: { _id: null, total: { $sum: "$totalPrice" } } },
-        ]),
-      ]);
+    const [
+      totalUsers,
+      totalOrders,
+      totalProducts,
+      revenueAgg,
+      pendingOrders,
+      completedOrders,
+      shippedOrders,
+      deliveredOrders,
+      cancelledOrders,
+      buyers,
+      sellers,
+      admins,
+      bannedUsers,
+    ] = await Promise.all([
+      User.countDocuments(),
+      Order.countDocuments(),
+      Product.countDocuments(),
+      Order.aggregate([
+        { $match: { status: { $in: ["completed", "delivered"] } } },
+        { $group: { _id: null, total: { $sum: "$totalAmount" } } },
+      ]),
+      Order.countDocuments({ status: "pending" }),
+      Order.countDocuments({ status: "completed" }),
+      Order.countDocuments({ status: "shipped" }),
+      Order.countDocuments({ status: "delivered" }),
+      Order.countDocuments({ status: "cancelled" }),
+      User.countDocuments({ role: 1 }),
+      User.countDocuments({ role: 2 }),
+      User.countDocuments({ role: 3 }),
+      User.countDocuments({ banned: true }),
+    ]);
 
-    const revenue = totalRevenue[0]?.total || 0;
+    const totalRevenue = revenueAgg[0]?.total || 0;
+    const completedCount = completedOrders + deliveredOrders;
 
     res.json({
       status: true,
@@ -200,9 +297,50 @@ const getAdminAnalytics = async (req, res, next) => {
         totalUsers,
         totalOrders,
         totalProducts,
-        totalRevenue: revenue,
+        totalRevenue,
+        pendingOrders,
+        completedOrders: completedCount,
+        shippedOrders,
+        cancelledOrders,
+        buyers,
+        sellers,
+        admins,
+        bannedUsers,
       },
     });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const getSettings = async (req, res, next) => {
+  try {
+    const settings = await getOrCreateSettings();
+    res.json({ status: true, settings });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const updateSettings = async (req, res, next) => {
+  try {
+    const settings = await getOrCreateSettings();
+    const allowed = [
+      "maintenanceMode",
+      "currency",
+      "timezone",
+      "emailAlerts",
+      "orderNotifications",
+      "userRegistrationAlerts",
+      "systemAlerts",
+    ];
+    for (const key of allowed) {
+      if (req.body[key] !== undefined) {
+        settings[key] = req.body[key];
+      }
+    }
+    await settings.save();
+    res.json({ status: true, message: "Settings saved", settings });
   } catch (err) {
     next(err);
   }
@@ -212,9 +350,12 @@ module.exports = {
   getAdminDashboard,
   getAllUsers,
   getAllAdmins,
+  getAllOrders,
   createAdmin,
   getAdminAnalytics,
   banUser,
   changeUserRole,
   deleteUser,
+  getSettings,
+  updateSettings,
 };

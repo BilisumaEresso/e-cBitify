@@ -52,7 +52,7 @@ const TrendingPage = () => {
     fetchTrends();
   }, []);
 
-  const getTrendIntensity = (reason) => {
+  const getTrendIntensity = (reason = "") => {
     const intensityWords = [
       "rising",
       "popular",
@@ -60,7 +60,7 @@ const TrendingPage = () => {
       "exploding",
       "surging",
     ];
-    return intensityWords.some((word) => reason.toLowerCase().includes(word))
+    return intensityWords.some((word) => (reason || "").toLowerCase().includes(word))
       ? "high"
       : "medium";
   };
@@ -406,7 +406,7 @@ const TrendingPage = () => {
                           <img
                             src={
                               product.photo?.[0]?.signedUrl ||
-                              "/api/placeholder/100/100"
+                              "/placeholder.png"
                             }
                             alt={product.name}
                             className="w-16 h-16 object-cover rounded-lg"
@@ -432,7 +432,7 @@ const TrendingPage = () => {
                     ))}
 
                     <Link
-                      to="/products?sortBy=popular"
+                      to="/product"
                       className="block w-full py-3 text-center text-orange-600 hover:text-orange-800 font-medium border border-orange-200 rounded-lg hover:bg-orange-50 transition-colors"
                     >
                       View All Trending Products
@@ -444,42 +444,6 @@ const TrendingPage = () => {
                     <p>No trending products available</p>
                   </div>
                 )}
-              </div>
-
-              {/* Trend Predictions */}
-              <div className="bg-gradient-to-br from-gray-900 to-black text-white rounded-xl shadow-lg p-6">
-                <h3 className="text-xl font-bold mb-6 flex items-center">
-                  <BarChart3 className="h-6 w-6 text-orange-400 mr-3" />
-                  Upcoming Trends
-                </h3>
-
-                <div className="space-y-4">
-                  {[
-                    { name: "Sustainable Products", confidence: "85%" },
-                    { name: "Smart Home Tech", confidence: "78%" },
-                    { name: "Home Fitness Gear", confidence: "72%" },
-                    { name: "Organic Skincare", confidence: "68%" },
-                  ].map((prediction, index) => (
-                    <div key={index} className="p-3 bg-white/10 rounded-lg">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="font-medium">{prediction.name}</span>
-                        <span className="text-orange-300 font-bold">
-                          {prediction.confidence}
-                        </span>
-                      </div>
-                      <div className="w-full bg-gray-700 rounded-full h-2">
-                        <div
-                          className="bg-orange-400 h-2 rounded-full"
-                          style={{ width: prediction.confidence }}
-                        ></div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <p className="text-sm text-gray-400 mt-6 text-center">
-                  Predictions based on current growth patterns
-                </p>
               </div>
             </div>
           </div>

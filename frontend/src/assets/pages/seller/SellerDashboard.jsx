@@ -1,21 +1,14 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
+import toast from "react-hot-toast";
 import {
   Package,
   DollarSign,
-  TrendingUp,
-  Users,
   Clock,
   ShoppingBag,
-  CheckCircle,
-  XCircle,
   AlertCircle,
   Plus,
-  Filter,
-  Download,
-  Search,
 } from "lucide-react";
 import { orderAPI, productAPI } from "../../../services/apiHelpers";
 
@@ -31,10 +24,10 @@ export default function SellerDashboard() {
   });
   const [recentOrders, setRecentOrders] = useState([]);
   const [topProducts, setTopProducts] = useState([]);
-  const sellerId = user.id; // replace with logged-in seller id
-  const navigate=useNavigate()
+  const sellerId = user?.id || user?._id;
+  const navigate = useNavigate();
+
   useEffect(() => {
-    // Fetch seller dashboard data
     fetchSellerData();
   }, []);
 
@@ -42,12 +35,12 @@ export default function SellerDashboard() {
     try {
       const [productsRes, ordersRes] = await Promise.all([
         productAPI.getAll(),
-        orderAPI.getAll(),
+        orderAPI.getSellerOrders(),
       ]);
 
-      const allProducts = productsRes.data.products;
+      const allProducts = productsRes.data.products || [];
       const products = allProducts.filter(
-        (product) => product.createdBy?._id?.toString() === sellerId.toString()
+        (product) => product.createdBy?._id?.toString() === sellerId?.toString()
       );
 
       const totalSales = products.reduce(
@@ -66,14 +59,9 @@ export default function SellerDashboard() {
             products.length
           : 0;
 
-      const allOrders = ordersRes.data.orders;
-      const orders = allOrders.filter((order) =>
-        order.items.some(
-          (item) => item.product.createdBy?._id?.toString() === sellerId.toString()
-        )
-      );
+      const orders = ordersRes.data.orders || [];
 
-      const recentOrders = orders
+      const recent = [...orders]
         .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
         .slice(0, 5);
 
@@ -96,8 +84,8 @@ export default function SellerDashboard() {
         averageRating: averageRating,
       });
 
-      setRecentOrders(recentOrders);
-      const topFiveSold = [...allProducts]
+      setRecentOrders(recent);
+      const topFiveSold = [...products]
         .sort((a, b) => b.sold - a.sold)
         .slice(0, 5);
       setTopProducts(topFiveSold);
@@ -144,12 +132,6 @@ export default function SellerDashboard() {
                 <Package className="text-blue-600" size={24} />
               </div>
             </div>
-            <div className="mt-4">
-              <div className="flex items-center text-sm text-green-600">
-                <TrendingUp size={16} />
-                <span className="ml-1">+12% from last month</span>
-              </div>
-            </div>
           </div>
 
           <div className="bg-white rounded-xl shadow-sm p-6">
@@ -164,12 +146,6 @@ export default function SellerDashboard() {
                 <ShoppingBag className="text-green-600" size={24} />
               </div>
             </div>
-            <div className="mt-4">
-              <div className="flex items-center text-sm text-green-600">
-                <TrendingUp size={16} />
-                <span className="ml-1">+18% from last month</span>
-              </div>
-            </div>
           </div>
 
           <div className="bg-white rounded-xl shadow-sm p-6">
@@ -182,12 +158,6 @@ export default function SellerDashboard() {
               </div>
               <div className="p-3 bg-purple-100 rounded-lg">
                 <DollarSign className="text-purple-600" size={24} />
-              </div>
-            </div>
-            <div className="mt-4">
-              <div className="flex items-center text-sm text-green-600">
-                <TrendingUp size={16} />
-                <span className="ml-1">+22% from last month</span>
               </div>
             </div>
           </div>
@@ -220,7 +190,10 @@ export default function SellerDashboard() {
               <h2 className="text-xl font-semibold text-gray-800">
                 Recent Orders
               </h2>
-              <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">
+              <button
+                onClick={() => navigate("/seller/orders")}
+                className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+              >
                 View All
               </button>
             </div>
@@ -250,7 +223,7 @@ export default function SellerDashboard() {
                   {recentOrders.map((order) => (
                     <tr key={order._id} className="border-b hover:bg-gray-50">
                       <td className="py-3">#{order._id.slice(0, 5)}</td>
-                      <td className="py-3">{order.user.name}</td>
+                      <td className="py-3">{order.user?.name}</td>
                       <td className="py-3 font-medium">${order.totalAmount}</td>
                       <td className="py-3">
                         <span
@@ -263,7 +236,7 @@ export default function SellerDashboard() {
                         </span>
                       </td>
                       <td className="py-3 text-sm text-gray-500">
-                        {order.date}
+                        {new Date(order.createdAt).toLocaleDateString()}
                       </td>
                     </tr>
                   ))}
@@ -278,7 +251,10 @@ export default function SellerDashboard() {
               <h2 className="text-xl font-semibold text-gray-800">
                 Top Selling Products
               </h2>
-              <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">
+              <button
+                onClick={() => navigate("/seller/products")}
+                className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+              >
                 View All
               </button>
             </div>
@@ -291,7 +267,7 @@ export default function SellerDashboard() {
                 >
                   <div
                     onClick={() => navigate(`/product/${product._id}`)}
-                    className="flex items-center gap-3"
+                    className="flex items-center gap-3 cursor-pointer"
                   >
                     <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
                       <Package size={20} className="text-gray-600" />
@@ -299,7 +275,7 @@ export default function SellerDashboard() {
                     <div>
                       <p className="font-medium">{product.name}</p>
                       <p className="text-sm text-gray-500">
-                        {product.sales} sales
+                        {product.sold || 0} sales
                       </p>
                     </div>
                   </div>
@@ -320,8 +296,11 @@ export default function SellerDashboard() {
           <h2 className="text-xl font-semibold text-gray-800 mb-6">
             Quick Actions
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <button className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition-colors">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <button
+              onClick={() => navigate("/add-product")}
+              className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition-colors"
+            >
               <Plus size={32} className="text-gray-400 mb-2" />
               <span className="font-medium">Add New Product</span>
               <span className="text-sm text-gray-500 mt-1">
@@ -329,19 +308,14 @@ export default function SellerDashboard() {
               </span>
             </button>
 
-            <button className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 rounded-xl hover:border-green-500 hover:bg-green-50 transition-colors">
+            <button
+              onClick={() => navigate("/seller")}
+              className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 rounded-xl hover:border-green-500 hover:bg-green-50 transition-colors"
+            >
               <DollarSign size={32} className="text-gray-400 mb-2" />
               <span className="font-medium">View Earnings</span>
               <span className="text-sm text-gray-500 mt-1">
                 Check your revenue
-              </span>
-            </button>
-
-            <button className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 rounded-xl hover:border-purple-500 hover:bg-purple-50 transition-colors">
-              <Users size={32} className="text-gray-400 mb-2" />
-              <span className="font-medium">Customer Reviews</span>
-              <span className="text-sm text-gray-500 mt-1">
-                See what customers say
               </span>
             </button>
           </div>

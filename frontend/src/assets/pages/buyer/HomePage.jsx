@@ -3,7 +3,8 @@ import { useEffect, useState } from "react";
 import { aiAPI, productAPI } from "../../../services/apiHelpers";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import { AlertCircle, Search } from "lucide-react";
+import { AlertCircle, Search, ShoppingBag } from "lucide-react";
+import ProductCard from "../../components/ProductCard";
 import { GoArrowDownRight, GoArrowRight, GoArrowUpRight, GoCheck } from "react-icons/go";
 
 export default function HomePage() {
@@ -28,7 +29,6 @@ export default function HomePage() {
         setLoadingAI(true);
         const products = await aiAPI.getRecommendations();
         setAiRecommendations(products.data.products);
-        console.log(products)
 
       // eslint-disable-next-line no-unused-vars
       } catch (err) {
@@ -61,7 +61,7 @@ export default function HomePage() {
 
       // > 3 words → AI-powered search
       if (wordCount > 3) {
-        res = await productAPI.aiSearch(searchQuery);
+        res = await productAPI.aiSearch(encodeURIComponent(searchQuery));
       }
       // ≤ 3 words → standard Mongo text search
       else {
@@ -85,45 +85,7 @@ export default function HomePage() {
     }
   };
 
-  // -----------------------------
-  // PRODUCT CARD (NO IMAGE)
-  // -----------------------------
-  const ProductCard = ({ product }) => (
-    <div
-      onClick={() => navigate(`/product/${product._id}`)}
-      className="
-      group
-      rounded-2xl
-      p-5
-      bg-white
-      border border-gray-100
-      shadow-sm
-      hover:shadow-xl
-      transition-all
-      duration-300
-      cursor-pointer
-      hover:-translate-y-1
-    "
-    >
-      <h3 className="font-semibold text-gray-900 text-base leading-snug group-hover:text-blue-600 transition-colors">
-        {product.name}
-      </h3>
 
-      <p className="text-sm text-gray-600 mt-2 line-clamp-2 leading-relaxed">
-        {product.desc}
-      </p>
-
-      <div className="mt-5 flex justify-between items-center">
-        <span className="font-bold text-lg text-blue-600">
-          ${Number(product.price).toFixed(2)}
-        </span>
-
-        <span className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600">
-          Stock: {product.quantity}
-        </span>
-      </div>
-    </div>
-  );
 
 
   // -----------------------------
@@ -203,12 +165,12 @@ export default function HomePage() {
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                 {aiRecommendations.length === 0 ? (
-                  <div className="min-h-screen col-span-4 bg-gradient-to-b from-gray-50 to-white py-8">
+                  <div className="col-span-4 bg-gradient-to-b from-gray-50 to-white py-8">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                       <div className="text-center flex flex-col  py-12">
-                        <AlertCircle className="h-16 w-16 text-red-400 mx-auto mb-4" />
+                        <ShoppingBag className="h-16 w-16 text-blue-400 mx-auto mb-4" />
                         <h2 className="text-2xl font-bold text-gray-800 mb-2">
-                          Failed to Load Recommendations
+                          No recommendations yet
                         </h2>
                         <p className="text-gray-600 mb-6">
                           There are no recommended products try after{" "}

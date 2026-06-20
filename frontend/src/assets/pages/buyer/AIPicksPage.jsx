@@ -33,7 +33,6 @@ const AIPicksPage = () => {
     try {
       setRecommendations((prev) => ({ ...prev, loading: true, error: null }));
       const response = await aiAPI.getRecommendations();
-      console.log(response.data.products)
       if (response.data.status) {
         setRecommendations({
           products: response.data.products,
@@ -62,8 +61,8 @@ const AIPicksPage = () => {
     }
   }, [user]);
 
-  const getStrategyIcon = (strategy) => {
-    switch (strategy.toLowerCase()) {
+  const getStrategyIcon = (strategy = "") => {
+    switch ((strategy || "").toLowerCase()) {
       case "popular":
         return <TrendingUp className="h-4 w-4" />;
       case "trending":
@@ -75,8 +74,8 @@ const AIPicksPage = () => {
     }
   };
 
-  const getStrategyColor = (strategy) => {
-    switch (strategy.toLowerCase()) {
+  const getStrategyColor = (strategy = "") => {
+    switch ((strategy || "").toLowerCase()) {
       case "popular":
         return "bg-orange-100 text-orange-700";
       case "trending":
@@ -217,20 +216,6 @@ const AIPicksPage = () => {
               {recommendations.products.length}
             </span>
           </button>
-
-          {[
-            "Trending Now",
-            "Best Sellers",
-            "Based on History",
-            "New Arrivals",
-          ].map((filter) => (
-            <button
-              key={filter}
-              className="px-4 py-2 bg-white border border-gray-300 hover:border-indigo-300 hover:bg-indigo-50 rounded-full text-gray-700 hover:text-indigo-700 transition-colors"
-            >
-              {filter}
-            </button>
-          ))}
         </div>
 
         {/* Products Section */}
@@ -240,7 +225,7 @@ const AIPicksPage = () => {
               Your Personalized Selection
             </h2>
             <Link
-              to="/products"
+              to="/product"
               className="text-indigo-600 hover:text-indigo-800 flex items-center"
             >
               View All Products
@@ -325,7 +310,7 @@ const AIPicksPage = () => {
                 personalized AI recommendations.
               </p>
               <Link
-                to="/products"
+                to="/product"
                 className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 inline-flex items-center"
               >
                 <ShoppingBag className="h-4 w-4 mr-2" />

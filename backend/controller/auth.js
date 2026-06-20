@@ -55,6 +55,11 @@ const login = async (req, res, next) => {
       throw new Error("incorrect password");
     }
 
+    if (user.banned) {
+      res.status(403);
+      throw new Error("Your account has been banned");
+    }
+
     const token = await generateToken(user);
     res.status(200).json({
       code: 200,

@@ -9,8 +9,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import api from "../../../services/api";
-import { orderAPI, productAPI } from "../../../services/apiHelpers";
+import { adminAPI } from "../../../services/apiHelpers";
 
 function StatCard({ icon: Icon, label, value, color }) {
   return (
@@ -40,30 +39,21 @@ export default function AdminAnalytics() {
 
   const fetchStats = async () => {
     try {
-      const [ordRes, prodRes, usersRes] = await Promise.all([
-        orderAPI.getAll(),
-        productAPI.getAll(),
-        api.get("/admin/users"),
-      ]);
-      const orders = ordRes.data.orders || [];
-      const products = prodRes.data.products || [];
-      const users = usersRes.data.users || [];
-
-      const totalRevenue = orders
-        .filter((o) => o.status === "completed" || o.status === "delivered")
-        .reduce((s, o) => s + Number(o.totalAmount || 0), 0);
-      const pendingOrders = orders.filter((o) => o.status === "pending").length;
-
+      const res = await adminAPI.getAnalytics();
+      const data = res.data.data || {};
       setStats({
-        totalUsers: users.length,
-        totalSellers: users.filter((u) => u.role === 2).length,
-        totalProducts: products.length,
-        totalOrders: orders.length,
-        totalRevenue,
-        pendingOrders,
-        completedOrders: orders.filter(
-          (o) => o.status === "completed" || o.status === "delivered",
-        ).length,
+        totalUsers: data.totalUsers || 0,
+        totalSellers: data.sellers || 0,
+        totalAdmins: data.admins || 0,
+        totalBuyers: data.buyers || 0,
+        totalProducts: data.totalProducts || 0,
+        totalOrders: data.totalOrders || 0,
+        totalRevenue: data.totalRevenue || 0,
+        pendingOrders: data.pendingOrders || 0,
+        completedOrders: data.completedOrders || 0,
+        shippedOrders: data.shippedOrders || 0,
+        cancelledOrders: data.cancelledOrders || 0,
+        bannedUsers: data.bannedUsers || 0,
       });
     } catch {
       toast.error("Failed to load analytics");
@@ -82,17 +72,16 @@ export default function AdminAnalytics() {
   if (!stats)
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <Loader2
-            className="animate-spin text-blue-600 mx-auto mb-4"
-            size={48}
-          />
-          <p className="text-gray-600">
-            Unable to load analytics data. Make sure backend is running.
-          </p>
-        </div>
+        <p className="text-gray-600">Unable to load analytics data.</p>
       </div>
     );
+
+  const otherOrders =
+    stats.totalOrders -
+    stats.pendingOrders -
+    stats.completedOrders -
+    stats.shippedOrders -
+    stats.cancelledOrders;
 
   return (
     <div className="min-h-screen pt-24 bg-gray-50 pb-12 px-4">
@@ -145,18 +134,29 @@ export default function AdminAnalytics() {
                   color: "bg-yellow-400",
                 },
                 {
+                  label: "Shipped",
+                  value: stats.shippedOrders,
+                  color: "bg-blue-400",
+                },
+                {
                   label: "Completed",
                   value: stats.completedOrders,
                   color: "bg-green-400",
                 },
                 {
-                  label: "Other",
-                  value:
-                    stats.totalOrders -
-                    stats.pendingOrders -
-                    stats.completedOrders,
-                  color: "bg-gray-300",
+                  label: "Cancelled",
+                  value: stats.cancelledOrders,
+                  color: "bg-red-400",
                 },
+                ...(otherOrders > 0
+                  ? [
+                      {
+                        label: "Other",
+                        value: otherOrders,
+                        color: "bg-gray-300",
+                      },
+                    ]
+                  : []),
               ].map(({ label, value, color }) => (
                 <div key={label}>
                   <div className="flex justify-between text-sm mb-1">
@@ -186,13 +186,23 @@ export default function AdminAnalytics() {
               {[
                 {
                   label: "Buyers",
-                  value: stats.totalUsers - stats.totalSellers,
+                  value: stats.totalBuyers,
                   color: "bg-blue-400",
                 },
                 {
                   label: "Sellers",
                   value: stats.totalSellers,
                   color: "bg-purple-400",
+                },
+                {
+                  label: "Admins",
+                  value: stats.totalAdmins,
+                  color: "bg-red-400",
+                },
+                {
+                  label: "Banned",
+                  value: stats.bannedUsers,
+                  color: "bg-gray-400",
                 },
               ].map(({ label, value, color }) => (
                 <div key={label}>

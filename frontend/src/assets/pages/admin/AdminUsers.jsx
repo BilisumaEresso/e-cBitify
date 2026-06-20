@@ -1,7 +1,7 @@
 import { Ban, ChevronDown, Loader2, Search, Trash2, Users } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
-import api from "../../../services/api";
+import { adminAPI } from "../../../services/apiHelpers";
 
 const ROLE_LABEL = { 1: "Buyer", 2: "Seller", 3: "Super Admin" };
 const ROLE_COLOR = {
@@ -16,14 +16,25 @@ export default function AdminUsers() {
   const [search, setSearch] = useState("");
   const [expandedMenu, setExpandedMenu] = useState(null);
   const [actionLoading, setActionLoading] = useState(null);
+  const menuRef = useRef(null);
 
   useEffect(() => {
     fetchUsers();
   }, []);
 
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setExpandedMenu(null);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   const fetchUsers = async () => {
     try {
-      const res = await api.get("/admin/users");
+      const res = await adminAPI.getUsers();
       setUsers(res.data.users || []);
     } catch {
       toast.error("Failed to load users");
@@ -35,9 +46,7 @@ export default function AdminUsers() {
   const handleBanUser = async (userId, currentBanStatus) => {
     try {
       setActionLoading(`ban-${userId}`);
-      await api.post(`/admin/users/${userId}/ban`, {
-        banned: !currentBanStatus,
-      });
+      await adminAPI.banUser(userId, !currentBanStatus);
       toast.success(currentBanStatus ? "User unbanned" : "User banned");
       setUsers((prev) =>
         prev.map((u) =>
@@ -58,7 +67,7 @@ export default function AdminUsers() {
       return;
     try {
       setActionLoading(`delete-${userId}`);
-      await api.delete(`/admin/users/${userId}`);
+      await adminAPI.deleteUser(userId);
       toast.success("User deleted");
       setUsers((prev) => prev.filter((u) => u._id !== userId));
     } catch (err) {
@@ -71,9 +80,7 @@ export default function AdminUsers() {
   const handleChangeRole = async (userId, newRole) => {
     try {
       setActionLoading(`role-${userId}`);
-      await api.post(`/admin/users/${userId}/role`, {
-        role: newRole,
-      });
+      await adminAPI.changeRole(userId, newRole);
       toast.success("User role updated");
       setUsers((prev) =>
         prev.map((u) => (u._id === userId ? { ...u, role: newRole } : u)),
@@ -149,7 +156,7 @@ export default function AdminUsers() {
                   </td>
                   <td className="py-3 px-4 text-gray-600">{u.email}</td>
                   <td className="py-3 px-4">
-                    <div className="relative">
+                    <div className="relative" ref={expandedMenu === u._id ? menuRef : null}>
                       <button
                         onClick={() =>
                           setExpandedMenu(expandedMenu === u._id ? null : u._id)

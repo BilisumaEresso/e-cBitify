@@ -37,6 +37,38 @@ const getAllOrders = async (req, res, next) => {
   }
 };
 
+const getSellerOrders = async (req, res, next) => {
+  try {
+    const sellerId = req.user._id || req.user.id;
+
+    // Find every product this seller owns
+    const sellerProductIds = await Product.find({ createdBy: sellerId }).distinct("_id");
+
+    if (sellerProductIds.length === 0) {
+      return res.status(200).json({
+        status: true,
+        message: "no products listed yet",
+        orders: [],
+      });
+    }
+
+    // Find orders containing at least one of those products
+    const orders = await Order.find({ "items.product": { $in: sellerProductIds } })
+      .populate("items.product")
+      .populate("user", "name email")
+      .populate("address")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      status: true,
+      message: "seller orders fetched successfully",
+      orders,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const addOrder = async (req, res, next) => {
   try {
     const userId = req.user && (req.user._id || req.user.id);
@@ -434,4 +466,5 @@ module.exports = {
   chapaCallback,
   verifyChapaPayment,
   paymentInfo,
+  getSellerOrders,
 };

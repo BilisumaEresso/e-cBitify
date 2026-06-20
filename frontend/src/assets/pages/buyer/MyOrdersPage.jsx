@@ -187,18 +187,11 @@ export default function MyOrdersPage() {
                       )}
                       {order.status === "pending" && (
                         <button
-                          onClick={async () => {
-                            try {
-                              await orderAPI.payNow(order._id);
-                              toast.success("Payment completed!");
-                              fetchOrders();
-                            } catch (err) {
-                              toast.error(err?.response?.data?.message || "Payment failed");
-                            }
-                          }}
-                          className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
+                          disabled
+                          title="Online payment is coming soon"
+                          className="px-4 py-2 text-sm bg-gray-200 text-gray-500 rounded-lg cursor-not-allowed font-medium"
                         >
-                          Pay Now
+                          Pay Now (Coming Soon)
                         </button>
                       )}
                     </div>

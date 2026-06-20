@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { categoryAPI, productAPI } from "../../../services/apiHelpers";
 import {
   Plus,
@@ -12,6 +13,10 @@ import toast from "react-hot-toast";
 import generateProductDetails from "../../../services/aiGenerate";
 
 const AddProduct = () => {
+  const { id: editId } = useParams();
+  const navigate = useNavigate();
+  const isEditMode = Boolean(editId);
+  const [pageLoading, setPageLoading] = useState(isEditMode);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [loadingCategories, setLoadingCategories] = useState(true);
@@ -53,6 +58,32 @@ const AddProduct = () => {
   useEffect(() => {
     fetchCategories();
   }, []);
+
+  useEffect(() => {
+    if (!isEditMode) return;
+    const loadExistingProduct = async () => {
+      try {
+        setPageLoading(true);
+        const res = await productAPI.getById(editId);
+        const product = res.data.product;
+        setFormData({
+          name: product.name || "",
+          desc: product.desc || "",
+          price: product.price || 0,
+          category: product.category?._id || product.category || "",
+          quantity: product.quantity || 0,
+        });
+        setUploadedPhotos(product.photo || []);
+        setCurrentProductId(editId);
+        setShowImageUpload(true);
+      } catch {
+        toast.error("Failed to load product for editing");
+      } finally {
+        setPageLoading(false);
+      }
+    };
+    loadExistingProduct();
+  }, [editId, isEditMode]);
 
   // Handle form input change
   const handleInputChange = (e) => {
@@ -127,14 +158,17 @@ const AddProduct = () => {
         quantity: parseInt(formData.quantity),
       };
 
-      // Create product first
-      const response = await productAPI.add(productData);
-      const product = response.data.product;
-      console.log(product);
-      setCurrentProductId(product._id);
-      console.log(currentProductId);
-      toast.success("Product added! Now add images.");
-      setShowImageUpload(true);
+      if (isEditMode) {
+        await productAPI.update(editId, productData);
+        toast.success("Product updated successfully!");
+        navigate("/seller/products");
+      } else {
+        const response = await productAPI.add(productData);
+        const product = response.data.product;
+        setCurrentProductId(product._id);
+        toast.success("Product added! Now add images.");
+        setShowImageUpload(true);
+      }
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to add product");
       console.error("Submit error:", err);
@@ -320,8 +354,9 @@ const AddProduct = () => {
       toast("You have unsaved images. Upload them first or they will be lost.");
       return;
     }
-    toast.success("Product created successfully!");
+    toast.success(isEditMode ? "Product updated successfully!" : "Product created successfully!");
     resetForm();
+    navigate("/seller/products");
   };
 
   // Handle drag and drop
@@ -345,6 +380,14 @@ const AddProduct = () => {
     }
   };
 
+  if (pageLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="animate-spin text-blue-600" size={48} />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto">
@@ -352,10 +395,10 @@ const AddProduct = () => {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
             <Plus className="w-7 h-7" />
-            Add New Product
+            {isEditMode ? "Edit Product" : "Add New Product"}
           </h1>
           <p className="mt-2 text-gray-600">
-            Fill in the details to add a new product to your store
+            {isEditMode ? "Update your product details and images" : "Fill in the details to add a new product to your store"}
           </p>
         </div>
 

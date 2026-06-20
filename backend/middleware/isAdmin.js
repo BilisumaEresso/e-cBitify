@@ -1,13 +1,21 @@
-const {User}  = require("../model")
+const { User } = require("../model");
 
-const isAdmin=async(req,res,next)=>{
-    const {id}=req.user
-    const user=await User.findById(id)
-    if(user.role===1){
-        res.code=403
-        throw new Error("unauthorized")
+const isAdmin = async (req, res, next) => {
+  try {
+    const { id } = req.user;
+    const user = await User.findById(id);
+    if (!user) {
+      res.status(401);
+      throw new Error("unauthorized");
     }
-    next()
-}
+    if (user.role === 1) {
+      res.status(403);
+      throw new Error("unauthorized");
+    }
+    next();
+  } catch (error) {
+    next(error);
+  }
+};
 
-module.exports=isAdmin
+module.exports = isAdmin;

@@ -117,9 +117,7 @@ const categoryList=async(req,res,next)=>{
           };
         }
 
-        const categories = await Category.find(filter).sort({
-          name:1,
-        });
+        const categories = await Category.find(filter).sort({ name:1 }).populate("createdBy", "name");
         res.status(200).json({
             categories:categories
         })
