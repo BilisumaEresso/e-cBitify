@@ -122,6 +122,8 @@ export const orderAPI = {
 
   getSellerOrders: () => api.get("/order/seller/all"),
 
+  getSellerAnalytics: () => api.get("/order/seller/analytics"),
+
   create: (orderData) => api.post("/order", orderData),
 
   cancel: (orderId) => api.patch(`/order/cancel/${orderId}`),

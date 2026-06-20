@@ -1,6 +1,6 @@
 // TODO : done with Product list
 import { useState, useEffect, useCallback } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
   Search,
   Filter,
@@ -9,27 +9,25 @@ import {
   Tag,
   DollarSign,
   Calendar,
-  TrendingUp,
   Star,
   ShoppingCart,
-  Heart,
-  Eye,
   ChevronRight,
   Sliders,
   RefreshCw,
   Package,
-  Clock,
   ArrowUpDown,
   Grid,
   List,
   Zap,
 } from "lucide-react";
 import ProductCard from "../../components/ProductCard";
-import { categoryAPI, productAPI } from "../../../services/apiHelpers";
+import { categoryAPI, productAPI, cartAPI } from "../../../services/apiHelpers";
 import { debounce } from "lodash";
 import toast from "react-hot-toast";
+import { useAuth } from "../../context/AuthContext";
 
 const ProductListPage = () => {
+  const [searchParams] = useSearchParams();
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -59,6 +57,11 @@ const ProductListPage = () => {
     fetchCategories();
   }, []);
 
+  useEffect(() => {
+    const cat = searchParams.get("category");
+    if (cat) setSelectedCategory(cat);
+  }, [searchParams]);
+
   // Apply filters when dependencies change
   useEffect(() => {
     applyFilters();
@@ -77,7 +80,6 @@ const ProductListPage = () => {
     try {
       setLoading(true);
       const response = await productAPI.getAll();
-      console.log(response);
       if (response.data.status) {
         setProducts(response.data.products);
         setFilteredProducts(response.data.products);
@@ -298,77 +300,74 @@ const ProductListPage = () => {
 
   if (loading && products.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen pt-24 bg-slate-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen pt-10 bg-gradient-to-b from-gray-50 to-white">
-      {/* Hero Section with Search */}
-      <div className="bg-gradient-to-r from-blue-600 to-violet-900 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">
-            Discover Amazing Products
+    <div className="min-h-screen pt-24 bg-slate-50 pb-12">
+      {/* Hero */}
+      <div className="bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-900 text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-14">
+          <h1 className="text-3xl sm:text-4xl font-bold mb-2 tracking-tight">
+            Discover products
           </h1>
-          <p className="text-xl text-blue-100 mb-8">
-            AI-powered search helps you find exactly what you're looking for
+          <p className="text-blue-100/80 mb-8 max-w-xl">
+            Browse our full catalog or describe what you need — AI search kicks in for detailed queries.
           </p>
 
-          {/* Main Search Bar */}
-          <div className="max-w-3xl mx-auto">
+          <div className="max-w-3xl">
             <div className="relative">
-              <div className="flex items-center bg-linear-to-r from-blue-400 to-black/50 backdrop-blur-sm border border-white/20 rounded-xl overflow-hidden">
-                <div className="pl-4">
-                  <Search className="h-5 w-5 text-white/70" />
+              <div className="flex items-center bg-white rounded-2xl shadow-xl p-1.5 gap-1">
+                <div className="pl-3">
+                  <Search className="h-5 w-5 text-slate-400" />
                 </div>
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={handleSearchChange}
-                  placeholder="Describe what you're looking for... (e.g., 'comfortable running shoes under $100')"
-                  className="w-full px-4 py-4 bg-transparent text-white placeholder-white/70 focus:outline-none"
+                  placeholder="Search products or describe what you need…"
+                  className="w-full px-3 py-3.5 bg-transparent text-slate-800 placeholder-slate-400 focus:outline-none"
                 />
                 {searchQuery && (
                   <button
                     onClick={() => setSearchQuery("")}
-                    className="px-4 text-white/70 rounded-lg hover:text-white"
+                    className="px-2 text-slate-400 hover:text-slate-600"
                   >
                     <X className="h-5 w-5" />
                   </button>
                 )}
-                {/* FIXME:ai search not working */}
                 <button
                   onClick={() => performAiSearch(searchQuery)}
                   disabled={!searchQuery || isAiSearching}
-                  className={`px-6 py-4 rounded-lg flex items-center ${
+                  className={`px-5 py-3 rounded-xl flex items-center gap-2 font-semibold text-sm transition disabled:opacity-50 ${
                     aiSearchEnabled
-                      ? "bg-gradient-to-r from-blue-500 to-black"
-                      : "bg-black/20 hover:bg-white/30"
-                  } transition-colors disabled:opacity-50`}
+                      ? "bg-indigo-600 text-white hover:bg-indigo-700"
+                      : "bg-slate-900 text-white hover:bg-slate-800"
+                  }`}
                 >
-                  <Sparkles className="h-5 w-5 mr-2" />
-                  {isAiSearching ? "Searching..." : "Search"}
+                  <Sparkles className="h-4 w-4" />
+                  {isAiSearching ? "Searching…" : "Search"}
                 </button>
               </div>
 
-              {/* AI Search Status */}
               {aiSearchEnabled && (
-                <div className="mt-3 flex items-center justify-between">
-                  <div className="flex items-center text-sm">
-                    <Sparkles className="h-4 w-4 mr-2 text-purple-300" />
-                    <span>AI Search Enabled</span>
+                <div className="mt-3 flex items-center justify-between text-sm text-blue-200">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-amber-300" />
+                    <span>AI search active</span>
                     {aiSearchResult?.strategy && (
-                      <span className="ml-4 px-2 py-1 bg-purple-500/20 text-purple-300 rounded text-xs">
+                      <span className="px-2 py-0.5 bg-white/10 rounded text-xs">
                         {aiSearchResult.strategy}
                       </span>
                     )}
                   </div>
                   {isAiSearching && (
-                    <div className="flex items-center text-sm">
-                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                      Analyzing your query...
+                    <div className="flex items-center gap-2">
+                      <RefreshCw className="h-4 w-4 animate-spin" />
+                      Analyzing…
                     </div>
                   )}
                 </div>
@@ -386,7 +385,7 @@ const ProductListPage = () => {
               showAdvancedFilters ? "block" : "hidden lg:block"
             }`}
           >
-            <div className="bg-white rounded-2xl shadow-xl p-6 sticky top-8 border border-gray-200">
+            <div className="bg-white rounded-2xl border border-slate-100 p-6 sticky top-28 shadow-sm">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-bold text-gray-800 flex items-center">
                   <Sliders className="h-5 w-5 mr-2" />
@@ -621,7 +620,7 @@ const ProductListPage = () => {
             </div>
 
             {/* Toolbar */}
-            <div className="bg-white rounded-xl shadow p-4 mb-6">
+            <div className="bg-white rounded-2xl border border-slate-100 p-4 mb-6 shadow-sm">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                   <h2 className="text-2xl font-bold text-gray-800">
@@ -902,94 +901,60 @@ const ProductListPage = () => {
   );
 };
 
-// Product List Item Component for List View
+// Product List Item for list view
 const ProductListItem = ({ product }) => {
-  const [isWishlisted, setIsWishlisted] = useState(false);
-  const mainImage = product.photo?.[0]?.signedUrl || "/api/placeholder/400/300";
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
+  const mainImage = product.photo?.[0]?.signedUrl || "/placeholder.png";
+  const outOfStock = !product.quantity;
+
+  const handleAddToCart = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isAuthenticated) return navigate("/login");
+    try {
+      await cartAPI.addToCart({ productId: product._id });
+      toast.success("Added to cart");
+    } catch {
+      toast.error("Could not add to cart");
+    }
+  };
 
   return (
     <Link to={`/product/${product._id}`}>
-      <div className="bg-white rounded-xl mt-5 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden">
+      <div className="bg-white rounded-2xl border border-slate-100 hover:border-slate-200 hover:shadow-md transition-all overflow-hidden">
         <div className="flex flex-col md:flex-row">
-          {/* Product Image */}
-          <div className="md:w-1/4 relative">
-            <img
-              src={mainImage}
-              alt={product.name}
-              className="w-full h-48 md:h-full object-cover"
-            />
-            <button
-              onClick={(e) => {
-                e.preventDefault();
-                setIsWishlisted(!isWishlisted);
-              }}
-              className="absolute top-3 right-3 p-2 bg-white rounded-full shadow hover:bg-gray-50"
-            >
-              <Heart
-                className={`h-4 w-4 ${
-                  isWishlisted ? "fill-red-500 text-red-500" : ""
-                }`}
-              />
-            </button>
+          <div className="md:w-48 h-48 md:h-auto relative bg-slate-50 shrink-0">
+            <img src={mainImage} alt={product.name} className="w-full h-full object-contain p-4" />
           </div>
-
-          {/* Product Details */}
-          <div className="md:w-3/4 p-6">
-            <div className="flex flex-col h-full">
-              <div className="flex-1">
-                <div className="flex justify-between items-start mb-2">
-                  <div>
-                    <div className="text-sm text-gray-500 mb-1">
-                      {product.category?.name || "Uncategorized"}
-                    </div>
-                    <h3 className="text-xl font-bold text-gray-800 mb-2">
-                      {product.name}
-                    </h3>
-                  </div>
-                  <div className="text-2xl font-bold text-blue-600">
-                    ${Number(product.price).toFixed(2)}
-                  </div>
-                </div>
-
-                <p className="text-gray-600 mb-4 line-clamp-2">
-                  {product.desc}
-                </p>
-
-                <div className="flex items-center space-x-6 mb-4">
-                  <div className="flex items-center">
-                    <Star className="h-5 w-5 text-yellow-400 mr-1" />
-                    <span className="font-medium">
-                      {Number(product.averageRating || 0).toFixed(1)}
-                    </span>
-                    <span className="text-gray-500 ml-1">
-                      ({product.rateNumber || 0} reviews)
-                    </span>
-                  </div>
-                  <div className="text-gray-600">
-                    <ShoppingCart className="inline h-4 w-4 mr-1" />
-                    {product.sold || 0} sold
-                  </div>
-                  <div className="text-gray-600">
-                    <Package className="inline h-4 w-4 mr-1" />
-                    {product.quantity || 0} in stock
-                  </div>
-                </div>
+          <div className="flex-1 p-5 flex flex-col justify-between">
+            <div>
+              <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide mb-1">
+                {product.category?.name || "Uncategorized"}
+              </p>
+              <h3 className="text-lg font-bold text-slate-900 mb-2">{product.name}</h3>
+              <p className="text-slate-500 text-sm line-clamp-2 mb-3">{product.desc}</p>
+              <div className="flex items-center gap-4 text-sm text-slate-500">
+                <span className="flex items-center gap-1">
+                  <Star className="h-4 w-4 text-amber-400 fill-amber-400" />
+                  {Number(product.averageRating || 0).toFixed(1)}
+                </span>
+                <span>{product.sold || 0} sold</span>
+                <span>{outOfStock ? "Out of stock" : `${product.quantity} in stock`}</span>
               </div>
-
-              <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                <div className="flex items-center space-x-2">
-                  <button className="p-2 text-gray-600 hover:text-blue-600">
-                    <Eye className="h-5 w-5" />
-                  </button>
-                  <button className="px-4 py-2 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50">
-                    Add to Compare
-                  </button>
-                </div>
-                <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center">
-                  <ShoppingCart className="h-5 w-5 mr-2" />
-                  Add to Cart
-                </button>
-              </div>
+            </div>
+            <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-100">
+              <span className="text-2xl font-bold text-slate-900">
+                ${Number(product.price).toFixed(2)}
+              </span>
+              <button
+                onClick={handleAddToCart}
+                disabled={outOfStock}
+                className="flex items-center gap-2 px-5 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-medium hover:bg-slate-800 disabled:bg-slate-200 disabled:text-slate-400 transition"
+              >
+                <ShoppingCart className="h-4 w-4" />
+                Add to cart
+              </button>
             </div>
           </div>
         </div>

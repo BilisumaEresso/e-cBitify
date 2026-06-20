@@ -83,13 +83,22 @@ export default function ProfileSidebar({ isOpen, onClose }) {
   ];
 
   if (user?.role === 2) {
-    navigationItems.push({
-      id: "products",
-      label: "My Products",
-      icon: Store,
-      path: "/seller/products",
-      color: "bg-blue-100 text-blue-600",
-    });
+    navigationItems.push(
+      {
+        id: "products",
+        label: "My Products",
+        icon: Store,
+        path: "/seller/products",
+        color: "bg-blue-100 text-blue-600",
+      },
+      {
+        id: "analytics",
+        label: "Analytics",
+        icon: Shield,
+        path: "/seller/analytics",
+        color: "bg-indigo-100 text-indigo-600",
+      }
+    );
   }
 
   if (user?.role === 3) {

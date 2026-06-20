@@ -269,6 +269,8 @@ const getAdminAnalytics = async (req, res, next) => {
       sellers,
       admins,
       bannedUsers,
+      allOrders,
+      topProductsRaw,
     ] = await Promise.all([
       User.countDocuments(),
       Order.countDocuments(),
@@ -286,10 +288,73 @@ const getAdminAnalytics = async (req, res, next) => {
       User.countDocuments({ role: 2 }),
       User.countDocuments({ role: 3 }),
       User.countDocuments({ banned: true }),
+      Order.find()
+        .select("status totalAmount createdAt user")
+        .populate("user", "name")
+        .sort({ createdAt: -1 })
+        .limit(200),
+      Product.find()
+        .select("name sold price photo")
+        .populate("photo")
+        .sort({ sold: -1 })
+        .limit(5),
     ]);
 
     const totalRevenue = revenueAgg[0]?.total || 0;
     const completedCount = completedOrders + deliveredOrders;
+
+    const days = [];
+    for (let i = 6; i >= 0; i--) {
+      const start = new Date();
+      start.setHours(0, 0, 0, 0);
+      start.setDate(start.getDate() - i);
+      const end = new Date(start);
+      end.setDate(end.getDate() + 1);
+      days.push({
+        start,
+        end,
+        label: start.toLocaleDateString("en-US", { weekday: "short" }),
+      });
+    }
+
+    const ordersChart = days.map((d) => ({
+      label: d.label,
+      value: allOrders.filter((o) => {
+        const t = new Date(o.createdAt);
+        return t >= d.start && t < d.end;
+      }).length,
+    }));
+
+    const revenueChart = days.map((d) => ({
+      label: d.label,
+      value: allOrders
+        .filter((o) => {
+          const t = new Date(o.createdAt);
+          return (
+            t >= d.start &&
+            t < d.end &&
+            ["completed", "delivered"].includes(o.status)
+          );
+        })
+        .reduce((s, o) => s + Number(o.totalAmount || 0), 0),
+    }));
+
+    const recentOrders = allOrders.slice(0, 8).map((o) => ({
+      _id: o._id,
+      status: o.status,
+      totalAmount: o.totalAmount,
+      createdAt: o.createdAt,
+      customer: o.user?.name || "Customer",
+    }));
+
+    const topProducts = topProductsRaw.map((p) => ({
+      _id: p._id,
+      name: p.name,
+      sold: p.sold || 0,
+      price: p.price,
+      revenue: Number(p.sold || 0) * Number(p.price || 0),
+      photo: p.photo?.[0]?.signedUrl,
+    }));
 
     res.json({
       status: true,
@@ -306,6 +371,13 @@ const getAdminAnalytics = async (req, res, next) => {
         sellers,
         admins,
         bannedUsers,
+        ordersChart,
+        revenueChart,
+        topProducts,
+        recentOrders,
+        avgOrderValue: completedCount
+          ? Number((totalRevenue / completedCount).toFixed(2))
+          : 0,
       },
     });
   } catch (err) {

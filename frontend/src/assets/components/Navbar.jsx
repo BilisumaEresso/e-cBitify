@@ -54,6 +54,7 @@ const ROLE_NAVIGATION = {
   2: {
     mainLinks: [
       { to: "/seller", label: "Dashboard", icon: Home },
+      { to: "/seller/analytics", label: "Analytics", icon: BarChart3 },
       { to: "/seller/products", label: "My Products", icon: Package },
       { to: "/seller/orders", label: "Orders", icon: ShoppingBag },
       { to: "/categories", label: "Categories", icon: Layers },

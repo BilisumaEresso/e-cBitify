@@ -69,6 +69,181 @@ const getSellerOrders = async (req, res, next) => {
   }
 };
 
+const getLastNDays = (n) => {
+  const days = [];
+  for (let i = n - 1; i >= 0; i--) {
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    start.setDate(start.getDate() - i);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 1);
+    days.push({
+      start,
+      end,
+      label: start.toLocaleDateString("en-US", { weekday: "short" }),
+    });
+  }
+  return days;
+};
+
+const sellerItemRevenue = (order, productIdSet) =>
+  (order.items || [])
+    .filter((item) => {
+      const pid = (item.product?._id || item.product)?.toString();
+      return pid && productIdSet.has(pid);
+    })
+    .reduce(
+      (sum, item) =>
+        sum + Number(item.totalItemPrice || item.price * item.quantity || 0),
+      0
+    );
+
+const getSellerAnalytics = async (req, res, next) => {
+  try {
+    const sellerId = req.user._id || req.user.id;
+    const products = await Product.find({ createdBy: sellerId }).populate("photo");
+    const productIdSet = new Set(products.map((p) => p._id.toString()));
+
+    if (productIdSet.size === 0) {
+      return res.status(200).json({
+        status: true,
+        data: {
+          totalProducts: 0,
+          totalOrders: 0,
+          totalUnitsSold: 0,
+          totalRevenue: 0,
+          orderRevenue: 0,
+          pendingOrders: 0,
+          shippedOrders: 0,
+          completedOrders: 0,
+          cancelledOrders: 0,
+          averageRating: 0,
+          lowStockCount: 0,
+          ordersChart: getLastNDays(7).map((d) => ({ label: d.label, value: 0 })),
+          revenueChart: getLastNDays(7).map((d) => ({ label: d.label, value: 0 })),
+          topProducts: [],
+          lowStockProducts: [],
+          recentOrders: [],
+        },
+      });
+    }
+
+    const sellerProductIds = [...productIdSet].map((id) => id);
+    const orders = await Order.find({
+      "items.product": { $in: sellerProductIds },
+    })
+      .populate("items.product")
+      .populate("user", "name email")
+      .sort({ createdAt: -1 });
+
+    let pendingOrders = 0;
+    let shippedOrders = 0;
+    let completedOrders = 0;
+    let cancelledOrders = 0;
+    let orderRevenue = 0;
+
+    const completedStatuses = new Set(["completed", "delivered"]);
+
+    orders.forEach((order) => {
+      const rev = sellerItemRevenue(order, productIdSet);
+      if (completedStatuses.has(order.status)) orderRevenue += rev;
+      if (order.status === "pending") pendingOrders++;
+      else if (order.status === "shipped") shippedOrders++;
+      else if (completedStatuses.has(order.status)) completedOrders++;
+      else if (order.status === "cancelled") cancelledOrders++;
+    });
+
+    const totalUnitsSold = products.reduce((s, p) => s + Number(p.sold || 0), 0);
+    const catalogRevenue = products.reduce(
+      (s, p) => s + Number(p.sold || 0) * Number(p.price || 0),
+      0
+    );
+    const averageRating =
+      products.length > 0
+        ? products.reduce((s, p) => s + Number(p.averageRating || 0), 0) /
+          products.length
+        : 0;
+
+    const lowStockProducts = products
+      .filter((p) => Number(p.quantity) <= 10)
+      .sort((a, b) => a.quantity - b.quantity)
+      .slice(0, 5)
+      .map((p) => ({
+        _id: p._id,
+        name: p.name,
+        quantity: p.quantity,
+        price: p.price,
+        photo: p.photo?.[0]?.signedUrl,
+      }));
+
+    const topProducts = [...products]
+      .sort((a, b) => Number(b.sold || 0) - Number(a.sold || 0))
+      .slice(0, 5)
+      .map((p) => ({
+        _id: p._id,
+        name: p.name,
+        sold: p.sold || 0,
+        price: p.price,
+        quantity: p.quantity,
+        revenue: Number(p.sold || 0) * Number(p.price || 0),
+        photo: p.photo?.[0]?.signedUrl,
+        averageRating: p.averageRating || 0,
+      }));
+
+    const days = getLastNDays(7);
+    const ordersChart = days.map((d) => ({
+      label: d.label,
+      value: orders.filter((o) => {
+        const t = new Date(o.createdAt);
+        return t >= d.start && t < d.end;
+      }).length,
+    }));
+
+    const revenueChart = days.map((d) => ({
+      label: d.label,
+      value: orders
+        .filter((o) => {
+          const t = new Date(o.createdAt);
+          return t >= d.start && t < d.end && completedStatuses.has(o.status);
+        })
+        .reduce((s, o) => s + sellerItemRevenue(o, productIdSet), 0),
+    }));
+
+    const recentOrders = orders.slice(0, 6).map((o) => ({
+      _id: o._id,
+      status: o.status,
+      createdAt: o.createdAt,
+      customer: o.user?.name || "Customer",
+      sellerAmount: sellerItemRevenue(o, productIdSet),
+      totalAmount: o.totalAmount,
+    }));
+
+    res.status(200).json({
+      status: true,
+      data: {
+        totalProducts: products.length,
+        totalOrders: orders.length,
+        totalUnitsSold,
+        totalRevenue: catalogRevenue,
+        orderRevenue,
+        pendingOrders,
+        shippedOrders,
+        completedOrders,
+        cancelledOrders,
+        averageRating: Number(averageRating.toFixed(1)),
+        lowStockCount: products.filter((p) => Number(p.quantity) <= 10).length,
+        ordersChart,
+        revenueChart,
+        topProducts,
+        lowStockProducts,
+        recentOrders,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const addOrder = async (req, res, next) => {
   try {
     const userId = req.user && (req.user._id || req.user.id);
@@ -467,4 +642,5 @@ module.exports = {
   verifyChapaPayment,
   paymentInfo,
   getSellerOrders,
+  getSellerAnalytics,
 };

@@ -28,7 +28,7 @@ const recommendProducts = async (req, res, next) => {
       })
         .populate("category", "name")
         .populate("photo", "signedUrl")
-        .select("name price averageRating rateNumber sold createdAt category")
+        .select("name price quantity averageRating rateNumber sold createdAt category")
         .lean();
 
       // map products for fast lookup
@@ -71,7 +71,7 @@ const recommendProducts = async (req, res, next) => {
       const popular = await Product.find({ quantity: { $gt: 0 } })
         .populate("category", "name")
         .populate("photo", "signedUrl")
-        .select("name price averageRating rateNumber sold createdAt category photo")
+        .select("name price quantity averageRating rateNumber sold createdAt category photo")
         .sort({ sold: -1, averageRating: -1 })
         .limit(12)
         .lean();
@@ -99,7 +99,7 @@ const recommendProducts = async (req, res, next) => {
       .populate("category", "name")
       .populate("photo", "signedUrl")
       .select(
-        "name price photo[].signedUrl averageRating rateNumber sold createdAt category"
+        "name price quantity averageRating rateNumber sold createdAt category photo"
       )
       .limit(20)
       .lean();
@@ -108,7 +108,7 @@ const recommendProducts = async (req, res, next) => {
       products = await Product.find({ quantity: { $gt: 0 } })
         .populate("category", "name")
         .populate("photo", "signedUrl")
-        .select("name price averageRating rateNumber sold createdAt category photo")
+        .select("name price quantity averageRating rateNumber sold createdAt category photo")
         .sort({ sold: -1, averageRating: -1 })
         .limit(12)
         .lean();

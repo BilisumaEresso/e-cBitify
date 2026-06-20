@@ -30,6 +30,7 @@ import OrderConfirmationPage from "./assets/pages/buyer/OrderConfirmationPage";
 
 // Seller pages
 import SellerDashboard  from "./assets/pages/seller/SellerDashboard";
+import SellerAnalytics  from "./assets/pages/seller/SellerAnalytics";
 import SellerCategories from "./assets/pages/seller/SellerCategories";
 import SellerProducts   from "./assets/pages/seller/SellerProducts";
 import SellerOrders     from "./assets/pages/seller/SellerOrders";
@@ -134,6 +135,14 @@ function App() {
                 element={
                   <RoleProtectedRoute allowedRoles={[2]}>
                     <SellerOrders />
+                  </RoleProtectedRoute>
+                }
+              />
+              <Route
+                path="/seller/analytics"
+                element={
+                  <RoleProtectedRoute allowedRoles={[2]}>
+                    <SellerAnalytics />
                   </RoleProtectedRoute>
                 }
               />
