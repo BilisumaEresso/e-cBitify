@@ -46,7 +46,13 @@ Rules:
     ],
   });
 
-  return JSON.parse(response.choices[0].message.content);
+  const raw = response.choices[0].message.content;
+  try {
+    const cleaned = raw.replace(/^```json\s*|^```\s*|\s*```$/g, "").trim();
+    return JSON.parse(cleaned);
+  } catch {
+    return { keywords: [query], category: null, price: { min: null, max: null }, sort: "relevance" };
+  }
 };
 
 module.exports = { aiSearchIntent };

@@ -87,14 +87,18 @@ const aiRecommendationIntent = async (userId) => {
   try {
    
     const cart = await Cart.findOne({ user: userId })
-      .populate("items.product")
-      .populate("items.product.category");
+      .populate({
+        path: "items.product",
+        populate: { path: "category", select: "name" },
+      });
 
     const orders = await Order.find({ user: userId })
       .sort({ createdAt: -1 })
       .limit(5)
-      .populate("items.product")
-      .populate("items.product.category");
+      .populate({
+        path: "items.product",
+        populate: { path: "category", select: "name" },
+      });
  
     const cartSummary = buildCartSummary(cart);
     const orderSummary = buildOrderSummary(orders);
@@ -143,7 +147,13 @@ Rules:
       ],
     });
 
-    return JSON.parse(response.choices[0].message.content);
+    const raw = response.choices[0].message.content;
+    try {
+      const cleaned = raw.replace(/^```json\s*|^```\s*|\s*```$/g, "").trim();
+      return JSON.parse(cleaned);
+    } catch {
+      throw new Error(`AI returned invalid JSON: ${raw.slice(0, 150)}`);
+    }
   } catch (error) {
     throw new Error(error)
   }

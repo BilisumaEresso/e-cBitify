@@ -111,9 +111,7 @@ const ProductListPage = () => {
 
       try {
         setIsAiSearching(true);
-        const response = await productAPI.aiSearch(
-          `/products/ai-search?q=${encodeURIComponent(query)}`
-        );
+        const response = await productAPI.aiSearch(encodeURIComponent(query));
 
         if (response.data) {
           setAiSearchResult({

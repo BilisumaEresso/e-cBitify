@@ -1,5 +1,5 @@
 const { User, Order, Cart, Product, Payment, Address } = require("../model");
-const generateTransactionId = require("../utils/generateTransactionID");
+const generateTransactionId = require("../utils/generateTransactionId");
 const axios = require("axios");
 const { chapaSecretKey, frontendUrl } = require("../config/keys");
 

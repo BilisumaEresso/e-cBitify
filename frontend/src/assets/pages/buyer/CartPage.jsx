@@ -17,7 +17,7 @@ import {
 import toast from "react-hot-toast";
 
 export default function CartPage() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
 
   const [showAddressModal, setShowAddressModal] = useState(false);
@@ -368,8 +368,8 @@ export default function CartPage() {
       <AddressModal
         open={showAddressModal}
         onClose={() => setShowAddressModal(false)}
-        addresses={[]}
-        defaultAddress={null}
+        addresses={user?.address ? [user.address] : []}
+        defaultAddress={user?.address || null}
         onContinue={handleAddressContinue}
       />
 

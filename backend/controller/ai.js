@@ -68,13 +68,20 @@ const recommendProducts = async (req, res, next) => {
     const cartHasItems = cart?.items?.length > 0;
 
     if (!cartHasItems && !hasOrders) {
+      const popular = await Product.find({ quantity: { $gt: 0 } })
+        .populate("category", "name")
+        .populate("photo", "signedUrl")
+        .select("name price averageRating rateNumber sold createdAt category photo")
+        .sort({ sold: -1, averageRating: -1 })
+        .limit(12)
+        .lean();
       return res.status(200).json({
         status: true,
-        source: "none",
-        strategy: "no_user_activity",
-        confidence: 0,
-        count: 0,
-        products: [],
+        source: "popular",
+        strategy: "popular",
+        confidence: 0.5,
+        count: popular.length,
+        products: popular,
       });
     }
 
@@ -88,7 +95,7 @@ const recommendProducts = async (req, res, next) => {
      */
     const productQuery = await buildProductRecommendationQuery(intent);
 
-    const products = await Product.find(productQuery)
+    let products = await Product.find(productQuery)
       .populate("category", "name")
       .populate("photo", "signedUrl")
       .select(
@@ -96,6 +103,16 @@ const recommendProducts = async (req, res, next) => {
       )
       .limit(20)
       .lean();
+
+    if (!products || products.length === 0) {
+      products = await Product.find({ quantity: { $gt: 0 } })
+        .populate("category", "name")
+        .populate("photo", "signedUrl")
+        .select("name price averageRating rateNumber sold createdAt category photo")
+        .sort({ sold: -1, averageRating: -1 })
+        .limit(12)
+        .lean();
+    }
 
     const expiresAt = new Date(Date.now() + 4 * 24 * 60 * 60 * 1000); // 4 days
 

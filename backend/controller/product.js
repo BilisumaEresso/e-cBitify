@@ -210,6 +210,11 @@ const searchProducts = async (req, res, next) => {
       status: true,
       message: "product fetched successfully",
       products: products,
+      aiResult: {
+        strategy: filters.sort,
+        keywords: filters.keywords,
+        filters: { category: filters.category, price: filters.price },
+      },
     });
   } catch (err) {
     next(err);
