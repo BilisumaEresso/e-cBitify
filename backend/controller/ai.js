@@ -1,7 +1,17 @@
-const {Product,Trending,Category,Recommendation, Cart, Order} = require("../model");
-const { aiRecommendationIntent } = require("../services/ai/aiRecommendation.services");
 const {
-  buildProductRecommendationQuery} = require("../services/recommendationBuilder.services");
+  Product,
+  Trending,
+  Category,
+  Recommendation,
+  Cart,
+  Order,
+} = require("../model");
+const {
+  aiRecommendationIntent,
+} = require("../services/ai/aiRecommendation.services");
+const {
+  buildProductRecommendationQuery,
+} = require("../services/recommendationBuilder.services");
 const { generateTrendsFromAI } = require("../services/ai/aiTrends.services");
 
 const recommendProducts = async (req, res, next) => {
@@ -28,7 +38,9 @@ const recommendProducts = async (req, res, next) => {
       })
         .populate("category", "name")
         .populate("photo", "signedUrl")
-        .select("name price quantity averageRating rateNumber sold createdAt category")
+        .select(
+          "name price quantity averageRating rateNumber sold createdAt category",
+        )
         .lean();
 
       // map products for fast lookup
@@ -71,7 +83,9 @@ const recommendProducts = async (req, res, next) => {
       const popular = await Product.find({ quantity: { $gt: 0 } })
         .populate("category", "name")
         .populate("photo", "signedUrl")
-        .select("name price quantity averageRating rateNumber sold createdAt category photo")
+        .select(
+          "name price quantity averageRating rateNumber sold createdAt category photo",
+        )
         .sort({ sold: -1, averageRating: -1 })
         .limit(12)
         .lean();
@@ -99,7 +113,7 @@ const recommendProducts = async (req, res, next) => {
       .populate("category", "name")
       .populate("photo", "signedUrl")
       .select(
-        "name price quantity averageRating rateNumber sold createdAt category photo"
+        "name price quantity averageRating rateNumber sold createdAt category photo",
       )
       .limit(20)
       .lean();
@@ -108,7 +122,9 @@ const recommendProducts = async (req, res, next) => {
       products = await Product.find({ quantity: { $gt: 0 } })
         .populate("category", "name")
         .populate("photo", "signedUrl")
-        .select("name price quantity averageRating rateNumber sold createdAt category photo")
+        .select(
+          "name price quantity averageRating rateNumber sold createdAt category photo",
+        )
         .sort({ sold: -1, averageRating: -1 })
         .limit(12)
         .lean();
@@ -147,40 +163,24 @@ module.exports = {
   recommendProducts,
 };
 
-
-
 // 🔹 Generate & store trends (manual trigger)
 const generateTrends = async (req, res, next) => {
   try {
-    // 1. Check existing valid trends
-    const existingTrends = await Trending.find({
-      expiresAt: { $gt: new Date() },
-    }).lean();
-
-    if (existingTrends.length > 0) {
-      return res.status(200).json({
-        status: true,
-        source: "cache",
-        count: existingTrends.length,
-        trends: existingTrends,
-      });
-    }
-
-    // 2. Load allowed categories
+    // 1. Load allowed categories
     const categories = await Category.find().select("name -_id");
     const categoryNames = categories.map((c) => c.name);
 
-    // 3. Ask AI
+    // 2. Ask AI
     const aiResult = await generateTrendsFromAI(categoryNames);
 
     if (!Array.isArray(aiResult.trends)) {
       throw new Error("Invalid AI trend response");
     }
 
-    // 4. Clean old (optional, TTL handles this anyway)
+    // 3. Replace the previous trend set so the latest result is always shown
     await Trending.deleteMany({});
 
-    // 5. Save new trends (4 days expiry)
+    // 4. Save new trends (4 days expiry)
     const expiresAt = new Date(Date.now() + 4 * 24 * 60 * 60 * 1000);
 
     const savedTrends = await Trending.insertMany(
@@ -190,7 +190,7 @@ const generateTrends = async (req, res, next) => {
         reason: t.reason,
         source: t.source || "AI trend analysis",
         expiresAt,
-      }))
+      })),
     );
 
     res.status(201).json({
@@ -203,7 +203,6 @@ const generateTrends = async (req, res, next) => {
     next(error);
   }
 };
-
 
 // 🔹 Fetch trends for frontend
 const getTrends = async (req, res, next) => {
@@ -220,7 +219,4 @@ const getTrends = async (req, res, next) => {
   }
 };
 
-
-
 module.exports = { recommendProducts, generateTrends, getTrends };
-

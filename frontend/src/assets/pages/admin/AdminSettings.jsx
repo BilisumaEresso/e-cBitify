@@ -1,18 +1,13 @@
-import {
-  Bell,
-  Globe,
-  Loader2,
-  Save,
-  Settings,
-} from "lucide-react";
+import { Bell, Globe, Loader2, Save, Settings } from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { adminAPI,aiAPI } from "../../../services/apiHelpers";
+import { adminAPI, aiAPI } from "../../../services/apiHelpers";
 
 export default function AdminSettings() {
   const [activeTab, setActiveTab] = useState("platform");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [updatingTrends, setUpdatingTrends] = useState(false);
   const [settings, setSettings] = useState({
     maintenanceMode: false,
     currency: "USD",
@@ -68,6 +63,21 @@ export default function AdminSettings() {
     }
   };
 
+  const handleUpdateTrends = async () => {
+    try {
+      setUpdatingTrends(true);
+      const res = await aiAPI.generateTrends();
+      const trendCount = res?.data?.count ?? 0;
+      toast.success(
+        `Trends updated successfully${trendCount ? ` (${trendCount})` : ""}`,
+      );
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to update trends");
+    } finally {
+      setUpdatingTrends(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen pt-24 flex items-center justify-center">
@@ -114,59 +124,81 @@ export default function AdminSettings() {
           <div className="flex-1">
             {activeTab === "platform" && (
               <div>
-                <div>
-                  <button onClick={()=>{aiAPI.generateTrends()}}>Update Trend</button>
+                <div className="mb-4 flex justify-end">
+                  <button
+                    onClick={handleUpdateTrends}
+                    disabled={updatingTrends}
+                    className="inline-flex items-center gap-2 rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {updatingTrends ? (
+                      <>
+                        <Loader2 size={16} className="animate-spin" />
+                        Updating trends...
+                      </>
+                    ) : (
+                      "Update Trends"
+                    )}
+                  </button>
                 </div>
-              <div className="bg-white rounded-xl shadow-sm p-6">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                  Platform Configuration
-                </h3>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Default Currency
-                    </label>
-                    <select
-                      value={settings.currency}
-                      onChange={(e) => handleChange("currency", e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
-                    >
-                      <option value="USD">USD - US Dollar</option>
-                      <option value="EUR">EUR - Euro</option>
-                      <option value="GBP">GBP - British Pound</option>
-                      <option value="ETB">ETB - Ethiopian Birr</option>
-                    </select>
-                  </div>
+                <div className="bg-white rounded-xl shadow-sm p-6">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                    Platform Configuration
+                  </h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Default Currency
+                      </label>
+                      <select
+                        value={settings.currency}
+                        onChange={(e) =>
+                          handleChange("currency", e.target.value)
+                        }
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                      >
+                        <option value="USD">USD - US Dollar</option>
+                        <option value="EUR">EUR - Euro</option>
+                        <option value="GBP">GBP - British Pound</option>
+                        <option value="ETB">ETB - Ethiopian Birr</option>
+                      </select>
+                    </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Timezone
-                    </label>
-                    <select
-                      value={settings.timezone}
-                      onChange={(e) => handleChange("timezone", e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
-                    >
-                      <option value="UTC">UTC</option>
-                      <option value="Africa/Addis_Ababa">Africa/Addis Ababa</option>
-                      <option value="America/New_York">America/New York</option>
-                      <option value="Europe/London">Europe/London</option>
-                    </select>
-                  </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Timezone
+                      </label>
+                      <select
+                        value={settings.timezone}
+                        onChange={(e) =>
+                          handleChange("timezone", e.target.value)
+                        }
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                      >
+                        <option value="UTC">UTC</option>
+                        <option value="Africa/Addis_Ababa">
+                          Africa/Addis Ababa
+                        </option>
+                        <option value="America/New_York">
+                          America/New York
+                        </option>
+                        <option value="Europe/London">Europe/London</option>
+                      </select>
+                    </div>
 
-                  <label className="flex items-center gap-3">
-                    <input
-                      type="checkbox"
-                      checked={settings.maintenanceMode}
-                      onChange={() => handleToggle("maintenanceMode")}
-                      className="w-4 h-4 text-purple-600 rounded cursor-pointer"
-                    />
-                    <span className="text-gray-700">
-                      Maintenance mode (flag stored — enforce on login separately)
-                    </span>
-                  </label>
+                    <label className="flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                        checked={settings.maintenanceMode}
+                        onChange={() => handleToggle("maintenanceMode")}
+                        className="w-4 h-4 text-purple-600 rounded cursor-pointer"
+                      />
+                      <span className="text-gray-700">
+                        Maintenance mode (flag stored — enforce on login
+                        separately)
+                      </span>
+                    </label>
+                  </div>
                 </div>
-              </div>
               </div>
             )}
 
@@ -176,14 +208,27 @@ export default function AdminSettings() {
                   Notification Preferences
                 </h3>
                 <p className="text-sm text-gray-500 mb-4">
-                  Stored for future email integration. Toggles are persisted to the database.
+                  Stored for future email integration. Toggles are persisted to
+                  the database.
                 </p>
                 <div className="space-y-4">
                   {[
-                    { key: "emailAlerts", label: "Send email alerts for important events" },
-                    { key: "orderNotifications", label: "Notify on new orders and status changes" },
-                    { key: "userRegistrationAlerts", label: "Alert on new user registrations" },
-                    { key: "systemAlerts", label: "Send system and error alerts" },
+                    {
+                      key: "emailAlerts",
+                      label: "Send email alerts for important events",
+                    },
+                    {
+                      key: "orderNotifications",
+                      label: "Notify on new orders and status changes",
+                    },
+                    {
+                      key: "userRegistrationAlerts",
+                      label: "Alert on new user registrations",
+                    },
+                    {
+                      key: "systemAlerts",
+                      label: "Send system and error alerts",
+                    },
                   ].map(({ key, label }) => (
                     <label key={key} className="flex items-center gap-3">
                       <input
