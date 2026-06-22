@@ -32,7 +32,7 @@ const TrendingPage = () => {
         aiAPI.getTrends("/ai/trends"),
         productAPI.getAll("/products"),
       ]);
-
+      console.log(trendsResponse)
       if (trendsResponse.data.status) {
         setTrends(trendsResponse.data.trends || []);
       }
@@ -279,7 +279,7 @@ const TrendingPage = () => {
 
                         <Link
                           to={`/product`}
-                
+
                           className="text-orange-600 hover:text-orange-800 flex items-center text-sm font-medium"
                         >
                           Shop {trend.category}

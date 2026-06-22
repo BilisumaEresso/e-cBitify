@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { adminAPI } from "../../../services/apiHelpers";
+import { adminAPI,aiAPI } from "../../../services/apiHelpers";
 
 export default function AdminSettings() {
   const [activeTab, setActiveTab] = useState("platform");
@@ -113,6 +113,10 @@ export default function AdminSettings() {
 
           <div className="flex-1">
             {activeTab === "platform" && (
+              <div>
+                <div>
+                  <button onClick={()=>{aiAPI.generateTrends()}}>Update Trend</button>
+                </div>
               <div className="bg-white rounded-xl shadow-sm p-6">
                 <h3 className="text-lg font-semibold text-gray-800 mb-4">
                   Platform Configuration
@@ -162,6 +166,7 @@ export default function AdminSettings() {
                     </span>
                   </label>
                 </div>
+              </div>
               </div>
             )}
 

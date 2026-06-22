@@ -229,7 +229,7 @@ export default function ProductDetail() {
             </div>
 
             <p className="text-3xl font-bold text-slate-900 mb-6">
-              ${Number(product.price).toFixed(2)}
+              ETB {Number(product.price).toFixed(2)}
             </p>
 
             <p className="text-slate-600 leading-relaxed mb-6">{product.desc}</p>
@@ -287,7 +287,7 @@ export default function ProductDetail() {
               <div className="mt-5 pt-5 border-t border-slate-100 space-y-2.5">
                 <div className="flex items-center gap-2 text-sm text-slate-500">
                   <Truck size={15} className="text-emerald-500 shrink-0" />
-                  Free shipping on orders over $100
+                  Free shipping on orders over ETB 100
                 </div>
                 <div className="flex items-center gap-2 text-sm text-slate-500">
                   <Shield size={15} className="text-emerald-500 shrink-0" />

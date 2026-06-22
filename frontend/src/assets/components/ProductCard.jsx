@@ -91,7 +91,7 @@ const ProductCard = ({ product, badge }) => {
 
         <div className="flex items-baseline gap-2 mt-auto pt-1">
           <span className="text-xl font-bold text-slate-900">
-            ${Number(product.price).toFixed(2)}
+            ETB {Number(product.price).toFixed(2)}
           </span>
           {(product.sold || 0) > 0 && (
             <span className="text-xs text-slate-400">{product.sold} sold</span>
